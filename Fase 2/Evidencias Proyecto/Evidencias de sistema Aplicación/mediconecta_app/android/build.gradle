@@ -1,3 +1,21 @@
+buildscript {
+    ext.kotlin_version = "2.0.21" // Añade esta línea o actualiza la versión de Kotlin a 1.9.0
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version" // Plugin de Kotlin
+        classpath 'com.google.gms:google-services:4.4.2'
+        // Otros classpath ya existentes
+    }
+}
+
+plugins {
+    id 'com.google.gms.google-services' version '4.4.2' apply false
+    // Otros plugins ya existentes (si los tienes)
+}
+
 allprojects {
     repositories {
         google()

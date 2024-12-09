@@ -5,5 +5,7 @@ const disponibilidadesController = require('../controllers/disponibilidadesContr
 // Rutas para citas
 router.get('/', disponibilidadesController.getAllDisponibilidades);
 router.get('/:doctor_id', disponibilidadesController.getDisponibilidadDoctor);
+router.get('/date/:fecha', disponibilidadesController.getDisponibilidadesPorFecha);
+router.post('/', disponibilidadesController.createAvailability);
 
 module.exports = router;

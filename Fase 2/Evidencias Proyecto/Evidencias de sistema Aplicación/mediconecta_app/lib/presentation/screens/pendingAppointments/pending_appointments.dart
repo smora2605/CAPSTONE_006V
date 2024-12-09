@@ -59,7 +59,37 @@ class _PendingAppointmentsState extends State<PendingAppointments> {
             child: isLoading
                 ? const CircularProgressIndicator() // Mostrar spinner si está cargando
                 : appointments.isEmpty
-                    ? const Text('No tienes citas pendientes') // Mensaje si no hay citas
+                    ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.calendar_month,
+                          size: 100,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          '¡Sin citas medicas Programados!',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'No tienes citas pendientes para hoy.',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[500],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  )
                     : ListView.builder(
                         itemCount: appointments.length,
                         itemBuilder: (context, index) {

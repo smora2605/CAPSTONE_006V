@@ -1,7 +1,11 @@
-import 'dart:math';
+import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:mediconecta_app/api/apiService.dart';
+import 'package:mediconecta_app/provider/user_auth_provider.dart';
 import 'package:mediconecta_app/services/solicitud_estado.dart';
+import 'package:provider/provider.dart';
 
 class NLP {
   //Funciones para peticiones http
@@ -9,238 +13,38 @@ class NLP {
   // Estado de la solicitud actual
   SolicitudEstado estadoSolicitud = SolicitudEstado();
 
-  // Dataset de intenciones y patrones
-  final List<Map<String, dynamic>> intentData = [
-    {
-      "intent": "saludo",
-      "patterns": [
-        "Hola",
-        "Buenos días",
-        "Buenas tardes",
-        "Qué tal",
-        "Hola asistente"
-      ],
-      "responses": [
-        "Hola, muy buen día.",
-        "¡Hola!",
-      ]
-    },
-    {
-      "intent": "consultar_disponibilidad_general",
-      "patterns": [
-        "¿Qué días tienen disponibilidad para medicina general?",
-        "¿Qué doctores tienen disponibles para medicina general?",
-        "¿Tienen disponidibilidad para medicina general?",
-        "Disponibilidad para medicina general",
-        "disponibilidades para medicina general",
-        "disponibilidad tienen para medicina general",
-        "medicina general",
-        "consulta general",
-      ],
-      "responses": [
-        "Si tenemos disponibilidad de lunes a viernes, ¿Qué especialidad requiere?",
-      ]
-    },
-    {
-      "intent": "consultar_disponibilidad_cardiologia",
-      "patterns": [
-        "¿Qué días tienen disponibilidad para cardiología?",
-        "¿Qué doctores tienen disponibles para cardiología?",
-        "¿Tienen disponidibilidad para cardiología?",
-        "Disponibilidad para cardiología",
-        "disponibilidades para cardiología",
-        "disponibilidad tienen para cardiología",
-        "cardiología",
-        "doctor que ve las enfermedades del corazón",
-        "enfermedades del corazón",
-      ],
-      "responses": [
-        "Si tenemos disponibilidad de lunes a viernes, ¿Qué especialidad requiere?",
-      ]
-    },
-    {
-      "intent": "seleccionar_doctor",
-      "patterns": [
-        "Quiero agendar con el",
-        "Quiero consultar disponibilidad de",
-        "Me interesa agendar con la",
-        "Disponibilidad del",
-        "Que disponibilidad tiene"
-      ],
-      "responses": [
-        "El doctor tiene las siguientes horas disponibles: Lunes de las 10 a las 15 horas, martes de 10:30 a 14 horas. ¿Te gustaría agendar en uno de estos horarios?"
-      ]
-    },
-    {
-      "intent": "seleccionar_bloquehorarioDia",
-      "patterns": [
-        "mañana",
-        "día",
-      ],
-      "responses": [
-        "Este es el bloque horario disponible en la mañana para el doctor."
-      ]
-    },
-    {
-      "intent": "seleccionar_bloquehorarioTarde",
-      "patterns": [
-        "tarde",
-      ],
-      "responses": [
-        "Este es el bloque horario disponible en la tarde para el doctor."
-      ]
-    },
-    {
-      "intent": "seleccionar_hora",
-      "patterns": [
-        "a las",
-        "a la hora",
-      ],
-      "responses": [
-        "Excelente, tu aquí tienes un resumen de tu solicitud. Di confirmar para crear la cita."
-      ]
-    },
-    {
-      "intent": "consultar_disponibilidad_por_dia",
-      "patterns": [
-        "¿Disponibilidad para el día lunes?",
-        "¿Disponibilidad para el día martes?",
-        "Horarios para el día lunes"
-      ],
-      "responses": [
-        "El Dr. Pérez está disponible el lunes a las 10 am.",
-        "El Dr. González tiene horarios disponibles el miércoles a las 3 pm."
-      ]
-    },
-    {
-      "intent": "reservar_cita",
-      "patterns": [
-        "Quiero reservar una cita",
-        "Necesito una cita",
-        "Agendar una cita",
-        "Reservar hora",
-        "Quiero agendar una consulta"
-      ],
-      "responses": [
-        "¿Con qué doctor te gustaría agendar la cita?",
-        "¿En qué fecha y hora te gustaría reservar?"
-      ]
-    },
-    {
-      "intent": "consultar_doctor",
-      "patterns": [
-        "¿Quién es el doctor?",
-        "Quiero información sobre el doctor",
-        "Dime algo sobre el Dr. Pérez",
-        "¿Cuáles son las especialidades del doctor?",
-        "Información del doctor"
-      ],
-      "responses": [
-        "El Dr. Pérez es especialista en cardiología con 20 años de experiencia.",
-        "El Dr. González se especializa en neurología y ha trabajado en este hospital por 15 años."
-      ]
-    },
-    {
-      "intent": "define_doctor",
-      "patterns": [
-        "¿Qué horas tiene disponible el doctor?",
-      ],
-      "responses": [
-        "El doctor tiene las siguientes horas disponibles: Lunes de las 10 a las 15 horas, martes de 10:30 a 14 horas, miercoles de 14 a 18 horas.",
-      ]
-    },
-    {
-      "intent": "consultar_especialidades",
-      "patterns": [
-        "¿Qué especialidades tienen?",
-        "¿Cuáles son las especialidades disponibles?",
-        "Especialidades médicas",
-        "Quiero saber sobre las especialidades",
-        "¿Qué especialidades ofrecen?",
-      ],
-      "responses": [
-        "Tenemos cardiología, neurología y pediatría disponibles.",
-        "Las especialidades disponibles son dermatología, endocrinología y psiquiatría."
-      ]
-    },
-    {
-      "intent": "despedida",
-      "patterns": [
-        "Adiós",
-        "Hasta luego",
-        "Nos vemos",
-        "Chao",
-        "Gracias, eso es todo"
-      ],
-      "responses": [
-        "¡Hasta luego! Cuídate.",
-        "Adiós, que tengas un buen día.",
-        "Nos vemos pronto."
-      ]
-    },
-    {
-      "intent": "agradecimiento",
-      "patterns": [
-        "Gracias",
-        "Muchas gracias",
-        "Te lo agradezco",
-        "Agradecido",
-        "Muy amable"
-      ],
-      "responses": [
-        "¡De nada! Estoy aquí para ayudarte.",
-        "Siempre a tu servicio.",
-        "Es un placer ayudarte."
-      ]
-    },
-    {
-      "intent": "recordatorio_medicamento",
-      "patterns": [
-        "Recordatorio de medicamento",
-        "Recuerda tomar el medicamento",
-        "¿A qué hora debo tomar mi medicina?",
-        "Medicamento",
-        "Recordatorio de pastillas"
-      ],
-      "responses": [
-        "Recuerda tomar tu paracetamol a las 8 pm.",
-        "No olvides tu medicación diaria de insulina a las 7 am."
-      ]
-    },
-    {
-      "intent": "consulta_glucosa",
-      "patterns": [
-        "Quiero registrar mi nivel de glucosa",
-        "Mi glucosa está en",
-        "Registrar nivel de glucosa",
-        "Mi glicemia es",
-        "Tengo un nivel de glucosa de"
-      ],
-      "responses": [
-        "Tu nivel de glucosa ha sido registrado.",
-        "Hemos registrado tu glucosa en el sistema."
-      ]
-    },
-    {
-      "intent": "confirmar",
-      "patterns": [
-        "Quiero confirmar la hora con el doctor",
-        "Quiero agendar mi hora",
-        "Me gustaría confirmar la hora",
-        "confirmar"
-      ],
-      "responses": [
-        "Excelente, tu hora ha sido agendada con éxito. Recuerda llegar 15 minutos antes de la hora mencionada.",
-      ]
-    },
-    {
-      "intent": "intent_no_entendido",
-      "patterns": [],
-      "responses": [
-        "No he podido entender tu solicitud, por favor se más claro.",
-      ]
+  // URL de la API de NLP en Collab
+  final String apiUrl = "https://950d-34-82-190-61.ngrok-free.app/process_text/";
+
+  String? lastResponse; // Variable para almacenar la última respuesta generada
+
+  // Enviar `input_text` a la API de NLP en Colab y obtener intenciones y respuesta
+  Future<Map<String, dynamic>> sendInputToNLP(String inputText) async {
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"input_text": inputText}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        print(data['response']);
+        return {
+          "intents": data['intents'],
+          "response": data['response'],
+        };
+      } else {
+        throw Exception("Error al procesar la solicitud: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Error en la solicitud NLP: $e");
+      return {
+        "intents": ["intent_no_entendido"],
+        "response": "Hubo un error al procesar tu solicitud.",
+      };
     }
-  ];
+  }
 
   List<Map<String, String>> listaDoctores = [];
   List<dynamic> listaDisponibilidades = [];
@@ -364,247 +168,184 @@ class NLP {
     return null; // No se encontró ninguna coincidencia
   }
 
-  // Función para evaluar las intenciones del usuario
-  List<String> evaluateIntents(String input) {
-    String normalizedInput = normalizeText(input); // Normalizar la entrada
-    print('input $input');
-    print('normalizedInput $normalizedInput');
-
-    List<String> detectedIntents = [];
-    for (var intent in intentData) {
-      for (var pattern in intent["patterns"]) {
-        String normalizedPattern = normalizeText(pattern); // Normalizar el patrón
-        if (normalizedInput.contains(normalizedPattern)) {
-          print('------------');
-          print('input $input');
-          print('intent ${intent["intent"]}');
-          print('-------------');
-          detectedIntents.add(intent["intent"]);
-          break;
-        }
-      }
-    }
-    return detectedIntents.isNotEmpty ? detectedIntents : ["intent_no_entendido"];
-  }
-
-  // Función para generar una respuesta en base a las intenciones
-  Future<Map<String, dynamic>> generateResponse(String input) async {
-    List<String> intents = evaluateIntents(input);
+  Future<Map<String, dynamic>> generateResponse(BuildContext context, String input) async {
+    final userAuthProvider = Provider.of<UserAuthProvider>(context, listen: false);
+    final nlpResult = await sendInputToNLP(input);  // Obtener intenciones y respuesta desde Colab
+    String responseText = nlpResult['response'];
+    List<String> detectedIntents = List<String>.from(nlpResult['intents']);
     List<String> responses = [];
     Map<String, dynamic> finalResponse = {};
 
-    String? doctorNombre = '';
+     String? doctorNombre = '';
     String? doctorEspecialidad = '';
-    String? horaEncontrada = '';
-    print('horaEncontrada1 $horaEncontrada');
 
+    String? horaEncontrada = detectHora(input); // Detecta la hora seleccionada
     String? doctorId = detectDoctorName(input);
-    horaEncontrada = detectHora(input);
-    print('horaEncontrada2 $horaEncontrada');
+    List<String>? horas = [];
 
-
-    for (String intent in intents) {
-      for (var intentItem in intentData) {
-        if (intentItem["intent"] == intent) {
-          // Verificar si la intención es consultar disponibilidad general
-          if (intents.contains("consultar_disponibilidad_general")) {
-            // Llamar a la API para obtener la disponibilidad general, que incluye la lista de doctores
-            DisponibilidadResponse apiResponse = await apiService.fetchDisponibilidadGeneral();
-
-            listaDoctores = [];
-            estadoSolicitud.reiniciar();
-
-            if(apiResponse.rawData.isNotEmpty){
-              // Actualizar la lista de doctores con la respuesta de la API
-              listaDoctores = (apiResponse.rawData).map((item) {
-                // Verificar que el item sea de tipo Map y que tenga las claves esperadas
-                if (item is Map && item.containsKey('nombre') && item.containsKey('id')) {
-                  return {
-                    'nombre': item['nombre'].toString(),
-                    'id': item['id'].toString(),
-                    'especialidad': item['especialidad'].toString(),
-                  };
-                } else {
-                  throw Exception("Formato inesperado en la respuesta de la API");
-                }
-              }).toList();
-
-              // Generar la lista de nombres de doctores para la respuesta
-              String doctoresNombres = listaDoctores.map((d) => d['nombre']).join(", ");
-              responses.add("Tenemos los siguientes doctores disponibles: $doctoresNombres.");
-              responses.add("¿Con cuál doctor te gustaría agendar una cita?");
-
-              finalResponse['rawData'] = apiResponse.rawData;
-            }else{
-              responses.add("Lo sentimos, no hay ningún doctor disponible hoy para la especialidad de medicina general.");
-            }
-
-            
-          } else if (intents.contains("consultar_disponibilidad_cardiologia")) {
-            // Llamar a la API para obtener la disponibilidad general, que incluye la lista de doctores
-            DisponibilidadResponse apiResponse = await apiService.fetchDisponibilidadCardiologia();
-
-            listaDoctores = [];
-            estadoSolicitud.reiniciar();
-            // Actualizar la lista de doctores con la respuesta de la API
-            listaDoctores = (apiResponse.rawData).map((item) {
-              // Verificar que el item sea de tipo Map y que tenga las claves esperadas
-              if (item is Map && item.containsKey('nombre') && item.containsKey('id')) {
-                return {
-                  'nombre': item['nombre'].toString(),
-                  'id': item['id'].toString(),
-                  'especialidad': item['especialidad'].toString(),
-                };
-              } else {
-                throw Exception("Formato inesperado en la respuesta de la API");
-              }
-            }).toList();
-
-            // Generar la lista de nombres de doctores para la respuesta
-            if(listaDoctores.isNotEmpty){
-
-              String doctoresNombres = listaDoctores.map((d) => d['nombre']).join(", ");
-              responses.add("Tenemos los siguientes doctores disponibles: $doctoresNombres.");
-              responses.add("¿Con cuál doctor te gustaría agendar una cita?");
-              finalResponse['rawData'] = apiResponse.rawData;
-            }else{
-              responses.add("Lo siento no tenermos doctores para cardiología disponibles.");
-            }
-          } else if (intent == "consultar_especialidades") {
-            // Llamada directa a la API dentro de la función
-            DisponibilidadResponse apiResponse = await apiService.fetchEspecialidades();
-            responses.add(apiResponse.formattedResponse);
-
-            // Almacena también los datos crudos si se necesitan
-            finalResponse['rawData'] = apiResponse.rawData;
-            //DOCTOR ID
-          } else if (doctorId != null) {
-            List<dynamic> bloques = [{'turno': 'Mañana'}, {'turno': 'Tarde'}];
-            // Verificar si el usuario selecciona un doctor
-            // Si el usuario mencionó un doctor, buscar su disponibilidad por ID
-            // DisponibilidadResponse apiResponse = await apiService.fetchDisponibilidadDoctor(doctorId);
-            DisponibilidadResponse apiResponse = DisponibilidadResponse(formattedResponse: 'Selecciona el bloque horario', rawData: bloques);
-
-            print('listaDoctores $listaDoctores');
-
-            doctorNombre = listaDoctores.firstWhere((d) => d['id'] == doctorId)['nombre'];
-            doctorEspecialidad = listaDoctores.firstWhere((d) => d['id'] == doctorId)['especialidad'];
-            estadoSolicitud.doctorId = doctorId;
-            estadoSolicitud.doctorNombre = doctorNombre;
-            estadoSolicitud.especialidadSeleccionada = doctorEspecialidad;
-            finalResponse['rawData'] = apiResponse.rawData;
-            responses.add(apiResponse.formattedResponse);
-
-            
-
-            // if(listaDisponibilidades.isEmpty){
-            //   responses.add('Lo siento, el doctor ${estadoSolicitud.doctorNombre} no tiene horarios disponibles para hoy.');
-            // }else{
-            //   // responses.add("Disponibilidad de $doctorNombre: ${apiResponse.formattedResponse}");
-            //   finalResponse['rawData'] = apiResponse.rawData;
-            // }
-
-            
-          } // Selecciona bloque horario día
-          else if (intents.contains("seleccionar_bloquehorarioDia")) {
-            if (estadoSolicitud.doctorId != null) {
-              estadoSolicitud.horaSeleccionada = horaEncontrada;
-
-              DisponibilidadResponse apiResponse = await apiService.fetchDisponibilidadDiaDoctor(estadoSolicitud.doctorId!);
-              listaDisponibilidades = (apiResponse.rawData).map((item) {
-                return item;
-              }).toList();
-
-              if(listaDisponibilidades.isNotEmpty){
-                responses.add('Selecciona una de las siguientes horas disponibles.');
-                finalResponse['rawData'] = apiResponse.rawData;
-              } else {
-                List<dynamic> bloques = [{'turno': 'Mañana'}, {'turno': 'Tarde'}];
-                finalResponse['rawData'] = bloques;
-                responses.add('Lo sentimos, no hay horas disponibles en la mañana.');
-              }
-              
-            } else {
-              responses.add('No has seleccionado un médico. Por favor, indica la especialidad que necesitas y luego selecciona al doctor.');
-            }
-          }// Selecciona bloque horario tarde
-          else if (intents.contains("seleccionar_bloquehorarioTarde")) {
-            if (estadoSolicitud.doctorId != null) {
-              estadoSolicitud.horaSeleccionada = horaEncontrada;
-
-              DisponibilidadResponse apiResponse = await apiService.fetchDisponibilidadTardeDoctor(estadoSolicitud.doctorId!);
-              listaDisponibilidades = (apiResponse.rawData).map((item) {
-                return item;
-              }).toList();
-
-              if(listaDisponibilidades.isNotEmpty){
-                responses.add('Selecciona una de las siguientes horas disponibles.');
-                finalResponse['rawData'] = apiResponse.rawData;
-              } else {
-                responses.add('Lo sentimos, no hay horas disponibles en la tarde.');
-                finalResponse['rawData'] = apiResponse.rawData;
-              }
-            } else {
-              responses.add('No has seleccionado un médico. Por favor, indica la especialidad que necesitas y luego selecciona al doctor.');
-            }
-          }
-          //HORA SELECCIONADA
-          else if (horaEncontrada != null) {
-            if (estadoSolicitud.doctorId != null) {
-              estadoSolicitud.horaSeleccionada = horaEncontrada;
-
-              final apiResponseSummary = [{
-                'TipoResumen': true,
-                'DoctorName': estadoSolicitud.doctorNombre,
-                'Especialidad': estadoSolicitud.especialidadSeleccionada,
-                'HoraSeleccionada': estadoSolicitud.horaSeleccionada,
-                'Fecha': DateTime.now().toString(),
-                'Estado' : 'Pendiente',
-              }];
-
-              responses.add("Revisa tu solicitud: estás agendando con ${estadoSolicitud.doctorNombre} a las ${estadoSolicitud.horaSeleccionada}. Di confirmar o presiona el botón para finalizar.");
-              finalResponse['rawData'] = apiResponseSummary;
-              print('apiResponse.rawData $apiResponseSummary');
-            } else {
-              responses.add('No has seleccionado un médico. Por favor, indica la especialidad que necesitas y luego selecciona al doctor.');
-            }
-          } else if (intents.contains("confirmar")) {
-            print('entrar?');
-            print('estadoSolicitud.doctorId ${estadoSolicitud.doctorId}');
-            print('estadoSolicitud.horaSeleccionada ${estadoSolicitud.horaSeleccionada}');
-            if (estadoSolicitud.doctorId != null && estadoSolicitud.horaSeleccionada != null) {
-
-              DisponibilidadResponse response = await apiService.createCita(
-                pacienteId: 1, // ID del paciente
-                doctorId: int.parse(estadoSolicitud.doctorId!), // ID del doctor
-                fecha: DateTime.now(), // Fecha y hora de la cita
-                hora: estadoSolicitud.horaSeleccionada!,
-                motivo: 'Consulta de rutina',
-                estado: 'Pendiente',
-              );
-
-              List<dynamic> success = [{'success': true}];
-
-              responses.add("Se ha creado tú solicitud con éxito. Recuerda llegar 15 minutos antes de la hora de la cita.");
-              finalResponse['rawData'] = success;
-              estadoSolicitud.reiniciar();
-
-            } else {
-              responses.add('No has seleccionado un médico. Por favor, indica la especialidad que necesitas y luego selecciona al doctor para poder reservar una hora.');
-            }
-          }
-          else {
-            responses.add(intentItem["responses"][
-                Random().nextInt((intentItem["responses"] as List).length)]);
-            estadoSolicitud.reiniciar();
-          }
-          break;
-        }
-      }
+    // Guardar la última respuesta generada si no es una intención de repetir
+    if (!detectedIntents.contains("repetir")) {
+      lastResponse = responseText;
     }
 
-    // Combinar todas las respuestas
-    finalResponse['formattedResponse'] = responses.join(" ");
+    // Si el usuario pide repetir, responder con la última respuesta generada
+    if (detectedIntents.contains("repetir")) {
+      responses.add(lastResponse ?? "Lo siento, no tengo nada para repetir en este momento.");
+      finalResponse['formattedResponse'] = responses.join(" ");
+      return finalResponse;
+    }
+
+    for (String intent in detectedIntents) {
+      // Lógica para disponibilidad general
+      if (intent == "consultar_disponibilidad_general") {
+        DisponibilidadResponse apiResponse = await apiService.fetchDisponibilidadGeneral();
+        listaDoctores = [];
+        estadoSolicitud.reiniciar();
+
+        if(apiResponse.rawData.isNotEmpty){
+          listaDoctores = (apiResponse.rawData).map((item) {
+            if (item is Map && item.containsKey('nombre') && item.containsKey('id')) {
+              return {
+                'nombre': item['nombre'].toString(),
+                'id': item['id'].toString(),
+                'especialidad': item['especialidad'].toString(),
+              };
+            } else {
+              throw Exception("Formato inesperado en la respuesta de la API");
+            }
+          }).toList();
+
+          String doctoresNombres = listaDoctores.map((d) => d['nombre']).join(", ");
+          responses.add("Tenemos los siguientes doctores disponibles: $doctoresNombres.");
+          responses.add("¿Con cuál doctor te gustaría agendar una cita?");
+          finalResponse['rawData'] = apiResponse.rawData;
+        } else {
+          responses.add("Lo sentimos, no hay ningún doctor disponible hoy para la especialidad de medicina general.");
+        }
+
+      } else if (intent == "consultar_disponibilidad_cardiologia") {
+        DisponibilidadResponse apiResponse = await apiService.fetchDisponibilidadCardiologia();
+        listaDoctores = [];
+        estadoSolicitud.reiniciar();
+
+        listaDoctores = (apiResponse.rawData).map((item) {
+          if (item is Map && item.containsKey('nombre') && item.containsKey('id')) {
+            return {
+              'nombre': item['nombre'].toString(),
+              'id': item['id'].toString(),
+              'especialidad': item['especialidad'].toString(),
+            };
+          } else {
+            throw Exception("Formato inesperado en la respuesta de la API");
+          }
+        }).toList();
+
+        if(listaDoctores.isNotEmpty){
+          String doctoresNombres = listaDoctores.map((d) => d['nombre']).join(", ");
+          responses.add("Tenemos los siguientes doctores disponibles: $doctoresNombres.");
+          responses.add("¿Con cuál doctor te gustaría agendar una cita?");
+          finalResponse['rawData'] = apiResponse.rawData;
+        } else {
+          responses.add("Lo siento, no tenemos doctores para cardiología disponibles.");
+        }
+      } else if (intent == "consultar_especialidades") {
+        DisponibilidadResponse apiResponse = await apiService.fetchEspecialidades();
+        responses.add(apiResponse.formattedResponse);
+        finalResponse['rawData'] = apiResponse.rawData;
+      } else if (doctorId != null) {
+        List<dynamic> bloques = [{'turno': 'Mañana'}, {'turno': 'Tarde'}];
+        DisponibilidadResponse apiResponse = DisponibilidadResponse(formattedResponse: 'Selecciona el bloque horario', rawData: bloques);
+
+        doctorNombre = listaDoctores.firstWhere((d) => d['id'] == doctorId)['nombre'];
+        doctorEspecialidad = listaDoctores.firstWhere((d) => d['id'] == doctorId)['especialidad'];
+        estadoSolicitud.doctorId = doctorId;
+        estadoSolicitud.doctorNombre = doctorNombre;
+        estadoSolicitud.especialidadSeleccionada = doctorEspecialidad;
+        finalResponse['rawData'] = apiResponse.rawData;
+        responses.add(apiResponse.formattedResponse);
+
+      } else if (intent == "seleccionar_bloquehorarioDia") {
+        if (estadoSolicitud.doctorId != null) {
+          estadoSolicitud.horaSeleccionada = horaEncontrada;
+
+          DisponibilidadResponse apiResponse = await apiService.fetchDisponibilidadDiaDoctor(estadoSolicitud.doctorId!);
+          listaDisponibilidades = (apiResponse.rawData).map((item) => item).toList();
+
+          if(listaDisponibilidades.isNotEmpty){
+            responses.add('Selecciona una de las siguientes horas disponibles.');
+            finalResponse['rawData'] = apiResponse.rawData;
+          } else {
+            List<dynamic> bloques = [{'turno': 'Mañana'}, {'turno': 'Tarde'}];
+            finalResponse['rawData'] = bloques;
+            responses.add('Lo sentimos, no hay horas disponibles en la mañana.');
+          }
+          
+        } else {
+          responses.add('No has seleccionado un médico. Por favor, indica la especialidad que necesitas y luego selecciona al doctor.');
+        }
+      } else if (intent == "seleccionar_bloquehorarioTarde") {
+        if (estadoSolicitud.doctorId != null) {
+          estadoSolicitud.horaSeleccionada = horaEncontrada;
+
+          DisponibilidadResponse apiResponse = await apiService.fetchDisponibilidadTardeDoctor(estadoSolicitud.doctorId!);
+          listaDisponibilidades = (apiResponse.rawData).map((item) => item).toList();
+
+          if(listaDisponibilidades.isNotEmpty){
+            responses.add('Selecciona una de las siguientes horas disponibles.');
+            finalResponse['rawData'] = apiResponse.rawData;
+          } else {
+            responses.add('Lo sentimos, no hay horas disponibles en la tarde.');
+            finalResponse['rawData'] = apiResponse.rawData;
+          }
+        } else {
+          responses.add('No has seleccionado un médico. Por favor, indica la especialidad que necesitas y luego selecciona al doctor.');
+        }
+      } else if (horaEncontrada != null) {
+        if (listaDisponibilidades.any((dispo) => dispo['hora'] == horaEncontrada)) {
+          estadoSolicitud.horaSeleccionada = horaEncontrada;
+
+          final apiResponseSummary = [{
+            'TipoResumen': true,
+            'DoctorName': estadoSolicitud.doctorNombre,
+            'Especialidad': estadoSolicitud.especialidadSeleccionada,
+            'HoraSeleccionada': estadoSolicitud.horaSeleccionada,
+            'Fecha': DateTime.now().toString(),
+            'Estado' : 'Pendiente',
+          }];
+
+          responses.add("Revisa tu solicitud: estás agendando con ${estadoSolicitud.doctorNombre} a las ${estadoSolicitud.horaSeleccionada}. Di confirmar o presiona el botón para finalizar.");
+          finalResponse['rawData'] = apiResponseSummary;
+          print('apiResponse.rawData $apiResponseSummary');
+        } else {
+          finalResponse['rawData'] = listaDisponibilidades;
+          responses.add("La hora que seleccionaste no está disponible. Por favor, selecciona una de las horas disponibles.");
+        }
+      } else if (intent == "confirmar") {
+        if (estadoSolicitud.doctorId != null && estadoSolicitud.horaSeleccionada != null) {
+          DisponibilidadResponse response = await apiService.createCita(
+            pacienteId: userAuthProvider.patientId!,
+            doctorId: int.parse(estadoSolicitud.doctorId!),
+            fecha: DateTime.now(),
+            hora: estadoSolicitud.horaSeleccionada!,
+            motivo: 'Consulta de rutina',
+            estado: 'Pendiente',
+          );
+
+          List<dynamic> success = [{'success': true}];
+
+          responses.add("Se ha creado tu solicitud con éxito. Recuerda llegar 15 minutos antes de la cita.");
+          finalResponse['rawData'] = success;
+          estadoSolicitud.reiniciar();
+        } else {
+          responses.add("No has seleccionado una hora o un doctor válidos. Por favor, completa esta información.");
+        }
+      }
+      break;
+    }
+
+    // Combina todas las respuestas y almacena la respuesta final
+    finalResponse['formattedResponse'] = responses.join("");
     return finalResponse;
   }
+
 }

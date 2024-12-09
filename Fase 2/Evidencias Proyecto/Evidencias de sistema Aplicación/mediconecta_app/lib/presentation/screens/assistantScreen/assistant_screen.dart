@@ -2,15 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mediconecta_app/nlp/nlp.dart';
+import 'package:mediconecta_app/provider/user_auth_provider.dart';
 import 'package:mediconecta_app/theme/theme.dart';
 import 'package:mediconecta_app/widgets/animations/microphone_button.dart';
 import 'package:mediconecta_app/widgets/availability_list_widget.dart';
 import 'package:mediconecta_app/widgets/doctor_list_widget.dart';
 import 'package:mediconecta_app/widgets/summary_cita_card.dart';
+import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 class AssistantScreen extends StatefulWidget {
-  const AssistantScreen({super.key});
+  const AssistantScreen({
+    super.key,
+    required this.currentUser
+  });
+
+  final Map<String, dynamic> currentUser;
 
   @override
   State<AssistantScreen> createState() => _AssistantScreenState();
@@ -52,7 +59,21 @@ class _AssistantScreenState extends State<AssistantScreen> {
   String? selectedHour;
   int? selectedAvailabilityIndex;
 
-  final String mensajeInicial = 'Hola Eduardo, ¿Cómo estás?, ¿En qué puedo ayudarte?';
+  late int _patientId = 0;
+  late int _userId = 0;
+  // final Map<String, dynamic> _currentUser;
+
+  // Método para obtener el nombre del usuario
+  String get userName {
+    return widget.currentUser != null && widget.currentUser!['nombre'] != null
+        ? widget.currentUser!['nombre']
+        : 'Usuario'; // Valor por defecto si el nombre no está disponible
+  }
+
+  // Mensaje inicial
+  String get mensajeInicial {
+    return 'Hola $userName, ¿Cómo estás?, ¿En que especialidad necesitas atención medica?';
+  }
 
   final NLP _nlp = NLP();
 
@@ -90,6 +111,30 @@ class _AssistantScreenState extends State<AssistantScreen> {
     setState(() {
       _ttsInput = mensajeInicial;
     });
+    // Ejecuta la inicialización del usuario después del primer frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeCurrentUser();
+    });
+  }
+
+  void _initializeCurrentUser() {
+    try {
+      final userAuthProvider = Provider.of<UserAuthProvider>(context, listen: false);
+      final patientId = userAuthProvider.patientId;
+      final userId = userAuthProvider.userId;
+
+      setState(() {
+        _patientId = patientId!;
+        _userId = userId!;
+      });
+      print('_patientId1 $_patientId');
+
+    } catch (e) {
+      print('Error al inicializar user $e');
+    }
+
+    print('_patientId $_patientId');
+    print('_userId $_userId');
   }
   
   void initSpeech() async {
@@ -166,7 +211,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
 
   void _processUserInput(String input) async {
     try {
-      Map<String, dynamic> response = await _nlp.generateResponse(input);
+      Map<String, dynamic> response = await _nlp.generateResponse(context, input);
 
       // La respuesta se muestra en texto y se convierte en voz
       String formattedResponse = response['formattedResponse'];
