@@ -4,7 +4,10 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   awesome_notifications
+  firebase_core
+  flutter_localization
   flutter_tts
+  permission_handler_windows
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST

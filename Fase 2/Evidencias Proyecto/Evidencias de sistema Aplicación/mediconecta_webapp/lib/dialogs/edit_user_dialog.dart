@@ -18,6 +18,7 @@ class EditUserDialog extends StatefulWidget {
 }
 
 class _EditUserDialogState extends State<EditUserDialog> {
+  late TextEditingController _rutController;
   late TextEditingController _nameController;
   late TextEditingController _emailController;
   late TextEditingController _telefonoController;
@@ -32,6 +33,7 @@ class _EditUserDialogState extends State<EditUserDialog> {
   @override
   void initState() {
     super.initState();
+    _rutController = TextEditingController(text: widget.user.rut);
     _nameController = TextEditingController(text: widget.user.name);
     _emailController = TextEditingController(text: widget.user.email);
     _telefonoController = TextEditingController(text: widget.user.telefono);
@@ -140,6 +142,7 @@ class _EditUserDialogState extends State<EditUserDialog> {
                 widget.onSave(
                   User(
                     id: widget.user.id,
+                    rut: _nameController.text,
                     name: _nameController.text,
                     email: _emailController.text,
                     telefono: _telefonoController.text,

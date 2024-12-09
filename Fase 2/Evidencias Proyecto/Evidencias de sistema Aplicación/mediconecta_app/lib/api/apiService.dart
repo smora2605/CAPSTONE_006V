@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:mediconecta_app/utils/constants.dart';
 
 class DisponibilidadResponse {
   final String formattedResponse;
@@ -10,16 +11,18 @@ class DisponibilidadResponse {
 }
 
 class ApiService {
-  final String _baseUrl = 'http://192.168.175.20:3000/api';
+  final _baseURL = Constants().baseURL;
 
   // Función para realizar la petición fetch para disponibilidad general
   //Retorna un objeto con la respuesta y la data
   Future<DisponibilidadResponse> fetchDisponibilidadGeneral() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/doctores/doctoresMedicinaGeneral'));
+      final response = await http.get(Uri.parse('$_baseURL/doctores/doctoresMedicinaGeneral'));
 
       if (response.statusCode == 200) {
         List<dynamic> data = jsonDecode(response.body);
+
+        print('data $data');
 
         // Construir la lista de doctores y especialidades
         String doctorsList = data.map((doctor) {
@@ -48,7 +51,7 @@ class ApiService {
 
   Future<DisponibilidadResponse> fetchDisponibilidadCardiologia() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/doctores/doctoresCardiologia'));
+      final response = await http.get(Uri.parse('$_baseURL/doctores/doctoresCardiologia'));
 
       if (response.statusCode == 200) {
         List<dynamic> data = jsonDecode(response.body);
@@ -81,7 +84,7 @@ class ApiService {
   // Función para realizar la petición fetch para especialidades
   Future<DisponibilidadResponse> fetchEspecialidades() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/especialidades/'));
+      final response = await http.get(Uri.parse('$_baseURL/especialidades/'));
 
       if (response.statusCode == 200) {
         List<dynamic> data = jsonDecode(response.body);
@@ -113,7 +116,7 @@ class ApiService {
   // Función para realizar la petición fetch para disponibilidades por doctor
   Future<DisponibilidadResponse> fetchDisponibilidadDoctor(String idDoctor) async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/disponibilidades/$idDoctor'));
+      final response = await http.get(Uri.parse('$_baseURL/disponibilidades/$idDoctor'));
 
       if (response.statusCode == 200) {
         List<dynamic> data = jsonDecode(response.body);
@@ -186,10 +189,9 @@ class ApiService {
     }
   }
 
-  // Función para realizar la petición fetch para disponibilidades por doctor
   Future<DisponibilidadResponse> fetchDisponibilidadDiaDoctor(String idDoctor) async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/disponibilidades/$idDoctor'));
+      final response = await http.get(Uri.parse('$_baseURL/disponibilidades/$idDoctor'));
 
       if (response.statusCode == 200) {
         List<dynamic> data = jsonDecode(response.body);
@@ -197,6 +199,9 @@ class ApiService {
         List<dynamic> horasDisponiblesMessage = [];
         List<dynamic> horasDisponibles = [];
         print('data $data');
+
+        // Obtener la hora actual
+        DateTime now = DateTime.now();
 
         // Verificar si data está vacío
         if (data.isNotEmpty) {
@@ -210,31 +215,36 @@ class ApiService {
               DateTime horaInicio = DateTime.parse('1970-01-01 $horaInicioStr');
               DateTime horaFin = DateTime.parse('1970-01-01 $horaFinStr');
 
-              
+              // Ajustar horaInicio al momento actual si es necesario
+              if (horaInicio.isBefore(now)) {
+                horaInicio = DateTime(
+                  1970, 01, 01, now.hour, (now.minute / 15).ceil() * 15
+                );
+                print('horaInicio $horaInicio');
+              }
+
               while (horaInicio.isBefore(horaFin) || horaInicio.isAtSameMomentAs(horaFin)) {
                 // Obtener la hora y minutos actuales de horaInicio
                 int horasActual = horaInicio.hour;
-                print('horasActual $horasActual');
-                
+
                 // Verificar si la hora actual está en el rango de 8:00 a 12:00
-                if (horasActual >= 8 && horasActual <= 11) {
+                if (horasActual >= 7 && horasActual <= 11) {
                   String horas = horaInicio.hour.toString().padLeft(2, '0');
                   String minutosMessage = horaInicio.minute == 0 ? "" : horaInicio.minute.toString().padLeft(2, '0');
                   String minutos = horaInicio.minute.toString().padLeft(2, '0');
-                              
+                  
                   // Formatear la hora en el mensaje legible
                   horasDisponiblesMessage.add("- a las $horas${minutosMessage.isEmpty ? '' : ' con $minutosMessage'}");
-                              
+                  
                   // Añadir un objeto con la hora y minutos a la lista de horasDisponibles
                   horasDisponibles.add({
-                    "hora":"$horas:$minutos"
+                    "hora": "$horas:$minutos"
                   });
                 }
 
                 // Incrementar por 15 minutos
                 horaInicio = horaInicio.add(const Duration(minutes: 15));
               }
-
 
               // Devolver todas las horas formateadas
               return horasDisponiblesMessage.join("\n");
@@ -243,7 +253,7 @@ class ApiService {
               return "- Formato de fecha u hora inválido";
             }
           }).join("\n");
-          
+
           return DisponibilidadResponse(
             formattedResponse: "Para el día de hoy, los horarios disponibles son:\n$disponibilidadList",
             rawData: horasDisponibles,
@@ -270,10 +280,9 @@ class ApiService {
     }
   }
 
-  // Función para realizar la petición fetch para disponibilidades por doctor
   Future<DisponibilidadResponse> fetchDisponibilidadTardeDoctor(String idDoctor) async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/disponibilidades/$idDoctor'));
+      final response = await http.get(Uri.parse('$_baseURL/disponibilidades/$idDoctor'));
 
       if (response.statusCode == 200) {
         List<dynamic> data = jsonDecode(response.body);
@@ -281,6 +290,9 @@ class ApiService {
         List<dynamic> horasDisponiblesMessage = [];
         List<dynamic> horasDisponibles = [];
         print('data $data');
+
+        // Obtener la hora actual
+        DateTime now = DateTime.now();
 
         // Verificar si data está vacío
         if (data.isNotEmpty) {
@@ -294,24 +306,32 @@ class ApiService {
               DateTime horaInicio = DateTime.parse('1970-01-01 $horaInicioStr');
               DateTime horaFin = DateTime.parse('1970-01-01 $horaFinStr');
 
-              
+              // Ajustar horaInicio al momento actual si es necesario
+              if (horaInicio.isBefore(now)) {
+                horaInicio = DateTime(
+                  1970, 01, 01, now.hour, (now.minute / 15).ceil() * 15
+                );
+                print('horaInicio $horaInicio');
+              }
+
               while (horaInicio.isBefore(horaFin) || horaInicio.isAtSameMomentAs(horaFin)) {
+
+                print('Entra?');
                 // Obtener la hora y minutos actuales de horaInicio
                 int horasActual = horaInicio.hour;
-                print('horasActual $horasActual');
-                
-                // Verificar si la hora actual está en el rango de 8:00 a 12:00
+
+                // Verificar si la hora actual está en el rango de 12:00 a 20:00
                 if (horasActual >= 12 && horasActual <= 20) {
                   String horas = horaInicio.hour.toString().padLeft(2, '0');
                   String minutosMessage = horaInicio.minute == 0 ? "" : horaInicio.minute.toString().padLeft(2, '0');
                   String minutos = horaInicio.minute.toString().padLeft(2, '0');
-                              
+                  
                   // Formatear la hora en el mensaje legible
                   horasDisponiblesMessage.add("- a las $horas${minutosMessage.isEmpty ? '' : ' con $minutosMessage'}");
-                              
+                  
                   // Añadir un objeto con la hora y minutos a la lista de horasDisponibles
                   horasDisponibles.add({
-                    "hora":"$horas:$minutos"
+                    "hora": "$horas:$minutos"
                   });
                 }
 
@@ -326,7 +346,7 @@ class ApiService {
               return "- Formato de fecha u hora inválido";
             }
           }).join("\n");
-          
+
           return DisponibilidadResponse(
             formattedResponse: "Para el día de hoy, los horarios disponibles son:\n$disponibilidadList",
             rawData: horasDisponibles,
@@ -380,7 +400,7 @@ class ApiService {
 
       // Hacer la solicitud POST para crear la cita
       final response = await http.post(
-        Uri.parse('$_baseUrl/citas/'),
+        Uri.parse('$_baseURL/citas/'),
         headers: {'Content-Type': 'application/json'}, // Asegúrate de enviar JSON
         body: jsonEncode(citaData), // Convertir los datos a JSON
       );
@@ -415,9 +435,9 @@ class ApiService {
     }
   }
 
-  Future<List<dynamic>> fetchAppointmentsPending() async {
+  Future<List<dynamic>> fetchAppointmentsPendingByPatient(int patientId) async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/citas/pending'));
+      final response = await http.get(Uri.parse('$_baseURL/citas/pending/$patientId'));
 
       if (response.statusCode == 200) {
         List<dynamic> data = jsonDecode(response.body);
@@ -436,4 +456,117 @@ class ApiService {
     }
   }
 
+  // Obtener los datos de un usuario por su ID
+  Future<Map<String, dynamic>> getCurrentUser(String userId) async {
+    final response = await http.get(Uri.parse('$_baseURL/usuarios/$userId'));
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Error al obtener los datos del usuario');
+    }
+  }
+
+  // Verificar si un usuario es doctor por su userId
+  Future<Map<String, dynamic>?> getPatientByUserId(int userId) async {
+    final response = await http.get(Uri.parse('$_baseURL/pacientes/usuario/$userId'));
+
+    if (response.statusCode == 200) {
+      List<dynamic> doctorData = jsonDecode(response.body); // Parsear la respuesta como lista
+
+      if (doctorData.isNotEmpty) {
+        return doctorData.first; // Devolver el primer elemento de la lista si existe
+      } else {
+        return null; // No hay doctores con ese userId
+      }
+    } else if (response.statusCode == 404) {
+      return null; // No es un doctor
+    } else {
+      throw Exception('Error al verificar si el usuario es un doctor');
+    }
+  }
+
+  // Función para obtener todos los registros de salud de un paciente
+  Future<List<Map<String, dynamic>>> getRegistrosSalud(int pacienteId) async {
+    try {
+      print('Obteniendo registros de salud para el paciente con ID: $pacienteId');
+
+      // Realizar la solicitud GET
+      final response = await http.get(
+        Uri.parse('$_baseURL/registro_salud/$pacienteId'), // Cambia esto a tu endpoint
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      print('response: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        // Si la solicitud es exitosa, decodificamos los datos
+        List<dynamic> data = jsonDecode(response.body);
+        return data.map((registro) => registro as Map<String, dynamic>).toList(); // Convertimos a List<Map<String, dynamic>>
+      } else {
+        print('Error al obtener registros de salud: ${response.statusCode}');
+        return []; // Retornamos una lista vacía en caso de error
+      }
+    } catch (e) {
+      print('Error al hacer la petición para obtener registros de salud: $e');
+      return []; // Retornamos una lista vacía en caso de excepción
+    }
+  }
+
+  // Función para crear un nuevo registro de salud
+  Future<Map<String, dynamic>?> createRegistroSalud({
+    required int pacienteId,
+    int? nivelGlucosa,
+    int? presionArterial,
+    int? frecuenciaCardiaca,
+  }) async {
+    try {
+      print('Creando registro de salud');
+
+      // Cuerpo de la solicitud con los datos de salud
+      final Map<String, dynamic> body = {
+        'paciente_id': pacienteId,
+        'nivel_glucosa': nivelGlucosa,
+        'presion_arterial': presionArterial,
+        'frecuencia_cardiaca': frecuenciaCardiaca,
+      };
+
+      print('registroData $body');
+
+      // Realizar la solicitud POST para crear el registro
+      final response = await http.post(
+        Uri.parse('$_baseURL/registro_salud/'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
+
+      print('response $response');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Si el registro se creó correctamente
+        var data = jsonDecode(response.body);
+        return data;
+      } else {
+        print('Error $response');
+        // Si hubo un error en la solicitud
+        return {};
+      }
+    } catch (e) {
+      print('Error al hacer la petición para crear registro de salud $e');
+      // En caso de error
+      return {};
+    }
+  }
+
+  // Obtener los datos de los recordatorios
+  Future<List<dynamic>> getRecordatorios() async {
+    final response = await http.get(Uri.parse('$_baseURL/recordatorios'));
+
+    if (response.statusCode == 200) {
+      print('responseRecordatorio ${response.body}');
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Error al obtener los recordatorios');
+    }
+  }
 }

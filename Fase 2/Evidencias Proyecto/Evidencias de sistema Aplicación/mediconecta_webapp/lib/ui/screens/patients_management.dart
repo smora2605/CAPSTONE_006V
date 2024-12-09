@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:mediconecta_webapp/dialogs/patientsDialogs/add_patient.dialog.dart';
 import 'package:mediconecta_webapp/models/patient_model.dart';
 import 'package:mediconecta_webapp/services/api_services.dart';
+import 'package:mediconecta_webapp/ui/theme/app_theme.dart';
 
 class PatientsManagement extends StatefulWidget {
   const PatientsManagement({super.key});
@@ -28,6 +30,13 @@ class _PatientsManagementState extends State<PatientsManagement> {
       patients = patientsData.map((patient) => Patient.fromJson(patient)).toList();
       isLoading = false;
     });
+  }
+
+  void _addPatient() {
+    showDialog(
+      context: context,
+      builder: (context) => const AddPatientDialog(),
+    );
   }
 
   // void _editUser(Patient patient) {
@@ -80,77 +89,126 @@ class _PatientsManagementState extends State<PatientsManagement> {
         ? const Center(child: CircularProgressIndicator())
         : SingleChildScrollView(
             scrollDirection: Axis.vertical,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                // Título y descripción
-                SizedBox(
-                  width: size.width,
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20, horizontal: 20), // Margen alrededor del título y la descripción
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Mantenedor de pacientes',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+              
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const SizedBox(
+                            child: Text(
+                              'Pacientes',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold
+                              ),
+                            ),
+              
                           ),
-                        ),
-                        SizedBox(height: 8), // Espacio entre el título y la descripción
-                        Text(
-                          'Administra y gestiona la información de los pacientes de la plataforma. '
-                          'Puedes agregar, editar, eliminar o ver detalles de cada paciente.',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20), // Espacio entre el título y la descripción
-            
-            
-                //Tabla de usuarios
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columns: const <DataColumn>[
-                      DataColumn(label: Text('ID')),
-                      DataColumn(label: Text('Nombre')),
-                      DataColumn(label: Text('Acciones')),
+                          const SizedBox(width: 20),
+                          MaterialButton(onPressed: (){_addPatient();}, color: AppColors.primaryColor, textColor: AppColors.textColorPrimary, child: const Text('Agregar'),),
+                          const SizedBox(width: 20),
+                          MaterialButton(onPressed: (){}, color: AppColors.primaryColor, textColor: AppColors.textColorPrimary, child: const Text('Importar'),),
+                          const SizedBox(width: 20),
+                          MaterialButton(onPressed: (){}, color: AppColors.primaryColor, textColor: AppColors.textColorPrimary, child: const Text('Exportar (Excel)'),),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          MaterialButton(onPressed: (){}, textColor: AppColors.textColorPrimary, color: AppColors.primaryColor, child: const Text('Filtrar'),),
+                        ],
+                      ),
                     ],
-                    rows: patients.map((patient) {
-                      return DataRow(
-                        selected: _isSelected(patient),
-                        onSelectChanged: (selected) => _onSelectUser(selected, patient),
-                        cells: [
-                          DataCell(Text(patient.id)),
-                          DataCell(Text(patient.nombre)),
-                          DataCell(
-                            Row(
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit, color: Colors.blue),
-                                  onPressed: () {
-                                    // _editUser(patient);
-                                  },
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
-                                  onPressed: () {
-                                    // _deleteUser(patient);
-                                  },
-                                ),
+                  ),
+              
+                  const SizedBox(height: 20),
+              
+                  //Tabla de usuarios
+                  SizedBox(
+                    height: 440,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: DataTable(
+                              columns: const <DataColumn>[
+                                // DataColumn(label: Text('ID')),
+                                DataColumn(label: Text('RUT')),
+                                DataColumn(label: Text('Nombre')),
+                                DataColumn(label: Text('Prioridad')),
+                                DataColumn(label: Text('Enfermedades crónicas')),
+                                DataColumn(label: Text('Alergias')),
+                                DataColumn(label: Text('Estado')),
+                                DataColumn(label: Text('Acciones')),
                               ],
+                              rows: patients.map((patient) {
+                                return DataRow(
+                                  selected: _isSelected(patient),
+                                  onSelectChanged: (selected) => _onSelectUser(selected, patient),
+                                  cells: [
+                                    // DataCell(Text(patient.id)),
+                                    DataCell(Text(patient.rut)),
+                                    DataCell(Text(patient.nombre)),
+                                    DataCell(Text(patient.prioridad)),
+                                    DataCell(Text(patient.enfermedadesCronicas)),
+                                    DataCell(Text(patient.alergias)),
+                                    DataCell(Container(
+                                      width: 100,
+                                      decoration: BoxDecoration(
+                                        color: patient.status == 'Activo'
+                                            ? const Color.fromARGB(255, 217, 243, 217)
+                                            : const Color.fromARGB(255, 226, 198, 195),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                        child: Text(
+                                          patient.status,
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: patient.status == 'Activo'
+                                            ? Colors.green
+                                            : Colors.red
+                                          ),
+                                        ),
+                                      ),
+                                    )),
+                                    DataCell(
+                                      Row(
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(Icons.edit, color: Colors.blue),
+                                            onPressed: () {
+                                              // _editUser(patient);
+                                            },
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.delete, color: Colors.red),
+                                            onPressed: () {
+                                              // _deleteUser(patient);
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }).toList(),
                             ),
                           ),
                         ],
-                      );
-                    }).toList(),
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
   }

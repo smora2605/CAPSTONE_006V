@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "74596876700",
+    "project_id": "mediconecta-app",
+    "storage_bucket": "mediconecta-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:74596876700:android:a20ad3b1359742a4664859",
+        "android_client_info": {
+          "package_name": "com.mediconecta_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB8USSfbfYkKuTG8whZ2d3Am3Bsj2RCWao"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

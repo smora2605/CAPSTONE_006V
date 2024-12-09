@@ -1,144 +1,174 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-class BarChartWidget extends StatelessWidget {
-  const BarChartWidget({super.key});
+class TrendChartWidget extends StatelessWidget {
+  final List<Map<String, dynamic>> registros; // Lista de registros de salud
+
+  const TrendChartWidget({super.key, required this.registros});
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
 
+    // Depuración: Imprimir cantidad y contenido de registros
+    print('Cantidad de registros inicial: ${registros.length}');
+    print('Registros iniciales: $registros');
+
+    // Filtrar y mapear datos para presión arterial
+    final List<FlSpot> pressureSpots = registros
+        .asMap()
+        .entries
+        .where((entry) => entry.value['presion_arterial'] != null)
+        .map((entry) {
+          print(
+              'Procesando registro: ${entry.key + 1}, valor: ${entry.value['presion_arterial']}');
+          return FlSpot(
+            (entry.key + 1).toDouble(),
+            (entry.value['presion_arterial'] ?? 0).toDouble(),
+          );
+        })
+        .toList();
+
+    print('PressureSpots: $pressureSpots');
+
+    // Filtrar y mapear datos para nivel de glucosa
+    final List<FlSpot> glucoseSpots = registros
+        .asMap()
+        .entries
+        .where((entry) => entry.value['nivel_glucosa'] != null)
+        .map((entry) {
+          print(
+              'Procesando glucosa: ${entry.key + 1}, valor: ${entry.value['nivel_glucosa']}');
+          return FlSpot(
+            (entry.key + 1).toDouble(),
+            (entry.value['nivel_glucosa'] ?? 0).toDouble(),
+          );
+        })
+        .toList();
+
+    print('GlucoseSpots: $glucoseSpots');
+
+    // Filtrar y mapear datos para frecuencia cardíaca
+    final List<FlSpot> frecuenciaSpots = registros
+        .asMap()
+        .entries
+        .where((entry) => entry.value['frecuencia_cardiaca'] != null)
+        .map((entry) {
+          print(
+              'Procesando frecuencia cardíaca: ${entry.key + 1}, valor: ${entry.value['frecuencia_cardiaca']}');
+          return FlSpot(
+            (entry.key + 1).toDouble(),
+            (entry.value['frecuencia_cardiaca'] ?? 0).toDouble(),
+          );
+        })
+        .toList();
+
+    print('FrecuenciaSpots: $frecuenciaSpots');
+
     return Column(
       children: [
-        // Título del gráfico de barras
         const Text(
           'Presión Arterial (mmHg)',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 20),
-        Column(
-          children: [
-            // Leyenda antes del gráfico
-            Container(
-              padding: const EdgeInsets.only(left: 70, right: 90),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Leyenda del primer grupo de barras
-                  Row(
-                    children: [
-                      Container(
-                        width: 15,
-                        height: 15,
-                        color: Colors.green,
-                      ),
-                      const SizedBox(width: 8),
-                      const Text('120'),
-                    ],
-                  ),
-                  const SizedBox(width: 24), // Espacio entre cada leyenda
-                  // Leyenda del segundo grupo de barras
-                  Row(
-                    children: [
-                      Container(
-                        width: 15,
-                        height: 15,
-                        color: Colors.red,
-                      ),
-                      const SizedBox(width: 8),
-                      const Text('130'),
-                    ],
-                  ),
-                  const SizedBox(width: 24),
-                  // Leyenda del tercer grupo de barras
-                  Row(
-                    children: [
-                      Container(
-                        width: 15,
-                        height: 15,
-                        color: Colors.green,
-                      ),
-                      const SizedBox(width: 8),
-                      const Text('98'),
-                    ],
-                  ),
-                ],
-              ),
+        SizedBox(
+          height: 250,
+          width: size.width / 1.1,
+          child: LineChart(
+            _buildTrendChart(
+              pressureSpots,
+              maxY: 160,
+              getDotColor: (value) {
+                if (value < 90) return Colors.red; // Hipotensión
+                if (value >= 90 && value <= 120) return Colors.green; // Normal
+                return Colors.red; // Hipertensión
+              },
             ),
-            const SizedBox(height: 16), // Espacio entre la leyenda y el gráfico
-
-            // Aquí está el gráfico de barras
-            SizedBox(
-              height: 200,  // Ajustar tamaño
-              width: size.width / 1.1,
-              child: BarChart(
-                BarChartData(
-                  alignment: BarChartAlignment.spaceAround,
-                  maxY: 140,
-                  barGroups: [
-                    BarChartGroupData(x: 1, barRods: [
-                      BarChartRodData(
-                        toY: 120,
-                        color: Colors.green,
-                        width: 15,
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                    ]),
-                    BarChartGroupData(x: 2, barRods: [
-                      BarChartRodData(
-                        toY: 130,
-                        color: Colors.red,
-                        width: 15,
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                    ]),
-                    BarChartGroupData(x: 3, barRods: [
-                      BarChartRodData(
-                        toY: 98,
-                        color: Colors.green,
-                        width: 15,
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                    ]),
-                  ],
-                  titlesData: FlTitlesData(
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, _) {
-                          switch (value.toInt()) {
-                            case 1:
-                              return const Text('mes 1');
-                            case 2:
-                              return const Text('mes 2');
-                            case 3:
-                              return const Text('mes 3');
-                          }
-                          return const Text('');
-                        },
-                      ),
-                    ),
-                    leftTitles: const AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: false,
-                        interval: 20,
-                      ),
-                    ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: false,
-                        interval: 20,
-                      ),
-                    ),
-                  ),
-                  gridData: const FlGridData(show: true),
-                  borderData: FlBorderData(show: true),
-                ),
-              ),
+          ),
+        ),
+        const SizedBox(height: 40),
+        const Text(
+          'Glucosa en Sangre (mg/dL)',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          height: 250,
+          width: size.width / 1.1,
+          child: LineChart(
+            _buildTrendChart(
+              glucoseSpots,
+              maxY: 600,
+              getDotColor: (value) {
+                if (value < 70) return Colors.red; // Hipoglucemia
+                if (value >= 70 && value <= 140) return Colors.green; // Normal
+                return Colors.red; // Prediabetes o diabetes
+              },
             ),
-          ],
+          ),
+        ),
+        const SizedBox(height: 40),
+        const Text(
+          'Frecuencia Cardiaca (ppm)',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          height: 250,
+          width: size.width / 1.1,
+          child: LineChart(
+            _buildTrendChart(
+              frecuenciaSpots,
+              maxY: 140,
+              getDotColor: (value) {
+                if (value < 60) return Colors.red; // Bradicardia
+                if (value >= 60 && value <= 100) return Colors.green; // Normal
+                return Colors.red; // Taquicardia
+              },
+            ),
+          ),
         ),
       ],
+    );
+  }
+
+  LineChartData _buildTrendChart(
+    List<FlSpot> spots, {
+    required double maxY,
+    required Color Function(double value) getDotColor,
+  }) {
+    return LineChartData(
+      maxY: maxY,
+      lineBarsData: [
+        LineChartBarData(
+          isCurved: true,
+          spots: spots,
+          color: Colors.blue,
+          barWidth: 3,
+          dotData: FlDotData(
+            show: true,
+            getDotPainter: (spot, _, __, ___) {
+              return FlDotCirclePainter(
+                radius: 8,
+                color: getDotColor(spot.y), // Obtener el color dinámico
+                strokeColor: Colors.white,
+                strokeWidth: 2,
+              );
+            },
+          ),
+        ),
+      ],
+      gridData: const FlGridData(show: true),
+      titlesData: FlTitlesData(
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            getTitlesWidget: (value, meta) =>
+                Text('Reg ${value.toInt()}'),
+          ),
+        ),
+      ),
     );
   }
 }

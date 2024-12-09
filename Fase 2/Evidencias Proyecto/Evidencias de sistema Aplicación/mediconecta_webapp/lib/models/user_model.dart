@@ -2,6 +2,7 @@ import 'package:intl/intl.dart';
 
 class User {
   final String id;
+  String rut;
   String name;
   String email;
   String telefono;
@@ -11,6 +12,7 @@ class User {
 
   User({
     required this.id,
+    required this.rut,
     required this.name,
     required this.email,
     required this.telefono,
@@ -22,6 +24,7 @@ class User {
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'].toString(),
+      rut: json['rut'] ?? 'Sin RUT',
       name: json['nombre'] ?? 'Sin Nombre',
       email: json['email'] ?? 'Sin Email',
       telefono: json['telefono'] ?? 'Sin telefono',

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mediconecta_webapp/models/doctors_model.dart';
 import 'package:mediconecta_webapp/services/api_services.dart';
+import 'package:mediconecta_webapp/ui/theme/app_theme.dart';
 
 class DoctorsManagement extends StatefulWidget {
   const DoctorsManagement({super.key});
@@ -80,79 +81,126 @@ class _DoctorsManagementState extends State<DoctorsManagement> {
         ? const Center(child: CircularProgressIndicator())
         : SingleChildScrollView(
             scrollDirection: Axis.vertical,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                // Título y descripción
-                SizedBox(
-                  width: size.width,
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20, horizontal: 20), // Margen alrededor del título y la descripción
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Mantenedor de doctores',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+              
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const SizedBox(
+                            child: Text(
+                              'Doctores',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold
+                              ),
+                            ),
+
                           ),
-                        ),
-                        SizedBox(height: 8), // Espacio entre el título y la descripción
-                        Text(
-                          'Administra y gestiona la información de los doctores de la plataforma. '
-                          'Puedes agregar, editar, eliminar o ver detalles de cada doctor.',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20), // Espacio entre el título y la descripción
-            
-            
-                //Tabla de usuarios
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columns: const <DataColumn>[
-                      DataColumn(label: Text('ID')),
-                      DataColumn(label: Text('Nombre')),
-                      DataColumn(label: Text('Especialidad')),
-                      DataColumn(label: Text('Acciones')),
+                          const SizedBox(width: 20),
+                          MaterialButton(onPressed: (){}, color: AppColors.primaryColor, textColor: AppColors.textColorPrimary, child: const Text('Agregar'),),
+                          const SizedBox(width: 20),
+                          MaterialButton(onPressed: (){}, color: AppColors.primaryColor, textColor: AppColors.textColorPrimary, child: const Text('Importar'),),
+                          const SizedBox(width: 20),
+                          MaterialButton(onPressed: (){}, color: AppColors.primaryColor, textColor: AppColors.textColorPrimary, child: const Text('Exportar (Excel)'),),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          MaterialButton(onPressed: (){}, textColor: AppColors.textColorPrimary, color: AppColors.primaryColor, child: const Text('Filtrar'),),
+                        ],
+                      ),
                     ],
-                    rows: doctors.map((doctor) {
-                      return DataRow(
-                        selected: _isSelected(doctor),
-                        onSelectChanged: (selected) => _onSelectUser(selected, doctor),
-                        cells: [
-                          DataCell(Text(doctor.id)),
-                          DataCell(Text(doctor.nombre)),
-                          DataCell(Text(doctor.especialidad)),
-                          DataCell(
-                            Row(
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit, color: Colors.blue),
-                                  onPressed: () {
-                                    // _editUser(doctor);
-                                  },
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
-                                  onPressed: () {
-                                    // _deleteUser(doctor);
-                                  },
-                                ),
+                  ),
+
+                  const SizedBox(height: 20),
+              
+                  //Tabla de doctores
+                  SizedBox(
+                    height: 440,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: DataTable(
+                              columns: const <DataColumn>[
+                                // DataColumn(label: Text('ID')),
+                                DataColumn(label: Text('RUT')),
+                                DataColumn(label: Text('Nombre')),
+                                DataColumn(label: Text('Especialidad')),
+                                DataColumn(label: Text('Licencia')),
+                                DataColumn(label: Text('Dirección consulta')),
+                                DataColumn(label: Text('Estado')),
+                                DataColumn(label: Text('Acciones')),
                               ],
+                              rows: doctors.map((doctor) {
+                                return DataRow(
+                                  selected: _isSelected(doctor),
+                                  onSelectChanged: (selected) => _onSelectUser(selected, doctor),
+                                  cells: [
+                                    // DataCell(Text(doctor.id)),
+                                    DataCell(Text(doctor.rut)),
+                                    DataCell(Text(doctor.nombre)),
+                                    DataCell(Text(doctor.especialidad)),
+                                    DataCell(Text(doctor.licencia)),
+                                    DataCell(Text(doctor.direccionConsulta)),
+                                    DataCell(Container(
+                                      width: 100,
+                                      decoration: BoxDecoration(
+                                        color: doctor.status == 'Activo'
+                                            ? const Color.fromARGB(255, 217, 243, 217)
+                                            : const Color.fromARGB(255, 226, 198, 195),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                        child: Text(
+                                          doctor.status,
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: doctor.status == 'Activo'
+                                            ? Colors.green
+                                            : Colors.red
+                                          ),
+                                        ),
+                                      ),
+                                    )),
+                                    DataCell(
+                                      Row(
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(Icons.edit, color: Colors.blue),
+                                            onPressed: () {
+                                              // _editUser(doctor);
+                                            },
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.delete, color: Colors.red),
+                                            onPressed: () {
+                                              // _deleteUser(doctor);
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }).toList(),
                             ),
                           ),
                         ],
-                      );
-                    }).toList(),
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
   }

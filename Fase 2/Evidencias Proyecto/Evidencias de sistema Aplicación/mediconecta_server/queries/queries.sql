@@ -14,6 +14,11 @@ CREATE TABLE usuarios (
 ALTER TABLE usuarios
 ADD COLUMN password VARCHAR(255) NOT NULL;
 
+DROP TABLE usuarios;
+
+-- Para setear el valor del ID cuando es autoincrement
+SELECT setval('usuarios_id_seq', (SELECT MAX(id) FROM usuarios));
+
 CREATE TABLE especialidades (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(100) UNIQUE NOT NULL -- Ejemplo: 'Cardiología', 'Pediatría', etc.
@@ -49,6 +54,54 @@ CREATE TABLE citas (
     motivo TEXT, -- Razón de la cita
     estado VARCHAR(50) DEFAULT 'pendiente' -- Estado de la cita (pendiente, confirmada, cancelada, etc.)
 );
+
+CREATE TABLE ficha_medica (
+    id SERIAL PRIMARY KEY,  -- Identificador único
+    id_cita INT NOT NULL,  -- ID de la cita, referencia a la tabla de citas
+    id_paciente INT NOT NULL,  -- ID del paciente, referencia a la tabla de pacientes
+    id_doctor INT NOT NULL,  -- ID del doctor, referencia a la tabla de doctores
+
+    motivo_consulta TEXT,  -- Motivo de la consulta
+    peso DECIMAL(5, 2),  -- Peso en kg
+    altura DECIMAL(5, 2),  -- Altura en cm
+    presion_arterial VARCHAR(10),  -- Presión arterial (ej: "120/80")
+    frecuencia_cardiaca INT,  -- Frecuencia cardíaca en ppm
+    frecuencia_respiratoria INT,  -- Frecuencia respiratoria
+
+    examen_fisico TEXT,  -- Descripción del examen físico
+    diagnostico TEXT,  -- Diagnóstico del paciente
+    tratamiento TEXT,  -- Detalles del tratamiento
+    
+    medicamento_1 VARCHAR(255),  -- Descripción del medicamento 1
+    frecuencia_medicamento_1 INT,  -- Frecuencia del medicamento 1 (cada cuántas horas)
+    dias_medicamento_1 INT,  -- Días del medicamento 1
+    medicamento_2 VARCHAR(255),  -- Descripción del medicamento 2
+    frecuencia_medicamento_2 INT,  -- Frecuencia del medicamento 2 (cada cuántas horas)
+    dias_medicamento_2 INT,  -- Días del medicamento 2
+    recordatorio TEXT,  -- Descripción del recordatorio
+    frecuencia_recordatorio INT,  -- Repetir cada cuántos días
+    dias_recordatorio INT  -- Días del recordatorio
+);
+
+CREATE TABLE recordatorios_medicamentos (
+    id SERIAL PRIMARY KEY,
+    id_paciente INT NOT NULL,
+    id_doctor INT NOT NULL,
+    id_ficha_medica INT NOT NULL,
+    desc_medicamento VARCHAR(100) NOT NULL,
+    frecuencia INT, -- Frecuencia en horas, por ejemplo, cada 8 horas
+    duracion_dias INT, -- Duración en días, por ejemplo, por 5 días
+);
+
+CREATE TABLE registro_salud (
+    id SERIAL PRIMARY KEY,
+    paciente_id INT NOT NULL,
+    nivel_glucosa INT NOT NULL,
+    presion_arterial INT NOT NULL,
+    frecuencia_cardiaca INT NOT NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 
 
 -- INSERTS

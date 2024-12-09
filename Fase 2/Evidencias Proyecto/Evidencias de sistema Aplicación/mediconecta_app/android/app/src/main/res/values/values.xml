@@ -1,0 +1,10 @@
+<resources>
+    <!-- Estos valores deberían coincidir con los datos en google-services.json -->
+    <string name="default_web_client_id" translatable="false" />
+    <string name="firebase_database_url" translatable="false" />
+    <string name="gcm_defaultSenderId" translatable="false" />
+    <string name="google_api_key" translatable="false" />
+    <string name="google_app_id" translatable="false" />
+    <string name="google_crash_reporting_api_key" translatable="false" />
+    <string name="google_storage_bucket" translatable="false" />
+</resources>

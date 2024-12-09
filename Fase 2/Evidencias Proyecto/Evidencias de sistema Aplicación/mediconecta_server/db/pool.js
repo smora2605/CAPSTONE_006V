@@ -2,11 +2,28 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
+  connectionString: process.env.DB_URL,
+  ssl: { rejectUnauthorized: false }, // Usa SSL si la base de datos lo requiere
 });
 
-module.exports = pool;
+console.log('DB_URL:', process.env.DB_URL);
+
+pool.connect()
+  .then(() => {
+    console.log('Conectado a la base de datos con éxito');
+  })
+  .catch(err => {
+    console.error('Error al conectar a la base de datos', err);
+  });
+
+pool.query('SELECT * FROM usuarios', (err, res) => {
+  if (err) {
+    console.error('Error ejecutando la consulta:', err);
+  } else {
+    console.log('Hora actual de la base de datos:', res.rows[0]);
+  }
+});
+
+// console.log(pool);
+
+module.exports = pool; // Asegúrate de exportar el pool correctamente

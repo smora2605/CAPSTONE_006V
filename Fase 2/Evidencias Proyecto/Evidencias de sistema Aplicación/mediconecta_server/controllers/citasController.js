@@ -12,7 +12,9 @@ exports.getAllCitas = async (req, res) => {
 
 // Obtiene todas las citas en Pendiente //Proximamente solo debe traer las del mismo user que esta loggeado en la app
 // Obtiene todas las citas en Pendiente, con nombres de paciente y doctor
-exports.getCitasPendientes = async (req, res) => {
+exports.getCitasPendientesPorPaciente = async (req, res) => {
+  const pacienteId = req.params.pacienteId; // Obtener el ID del paciente desde los parámetros de la solicitud
+
   try {
     const result = await pool.query(`
       SELECT 
@@ -39,11 +41,98 @@ exports.getCitasPendientes = async (req, res) => {
       JOIN 
         especialidades e ON d.especialidad_id = e.id
       WHERE 
-        c.estado = $1
-    `, ['Pendiente']);
+        c.estado = $1 AND p.id = $2  -- Filtrar por estado y ID del paciente
+      ORDER BY id DESC
+    `, ['Pendiente', pacienteId]); // Se pasan los parámetros al query
 
     res.json(result.rows);
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getCitasPorDoctor = async (req, res) => {
+  const doctorId = req.params.doctorId; // ID del doctor pasado como parámetro en la solicitud
+
+  try {
+    const result = await pool.query(`
+      SELECT 
+        c.id,
+        c.paciente_id,
+        c.doctor_id,
+        pu.nombre AS paciente_nombre,
+        pu.genero AS paciente_genero,
+        du.nombre AS doctor_nombre,
+        du.genero AS doctor_genero,
+        e.nombre AS especialidad,
+        c.fecha,
+        c.hora,
+        c.motivo,
+        c.estado
+      FROM 
+        citas c
+      JOIN 
+        pacientes p ON c.paciente_id = p.id
+      JOIN 
+        usuarios pu ON p.usuario_id = pu.id  -- Unir con la tabla usuarios (paciente)
+      JOIN 
+        doctores d ON c.doctor_id = d.id
+      JOIN 
+        usuarios du ON d.usuario_id = du.id  -- Unir con la tabla usuarios (doctor)
+      JOIN 
+        especialidades e ON d.especialidad_id = e.id
+      WHERE 
+        c.doctor_id = $1  -- Filtro para el ID del doctor
+    `, [doctorId]);
+
+    res.json(result.rows); // Devuelve las citas obtenidas
+  } catch (err) {
+    console.error('Error al obtener las citas:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+exports.getCitasPendientesPorDoctor = async (req, res) => {
+  const doctorId = req.params.doctorId; // Asumiendo que el id del doctor viene en los parámetros de la solicitud
+
+  try {
+    const result = await pool.query(`
+      SELECT 
+        c.id,
+        c.paciente_id,
+        c.doctor_id,
+        pu.nombre AS paciente_nombre,
+        pu.genero AS paciente_genero,
+        du.nombre AS doctor_nombre,
+        du.genero AS doctor_genero,
+        e.nombre AS especialidad,
+        c.fecha,
+        c.hora,
+        c.motivo,
+        c.estado
+      FROM 
+        citas c
+      JOIN 
+        pacientes p ON c.paciente_id = p.id
+      JOIN 
+        usuarios pu ON p.usuario_id = pu.id  -- Unir con la tabla usuarios (paciente)
+      JOIN 
+        doctores d ON c.doctor_id = d.id
+      JOIN 
+        usuarios du ON d.usuario_id = du.id  -- Unir con la tabla usuarios (doctor)
+      JOIN 
+        especialidades e ON d.especialidad_id = e.id
+      WHERE 
+        c.estado = $1
+      AND 
+        c.doctor_id = $2  -- Filtro para el ID del doctor
+    `, ['Pendiente', doctorId]);
+
+    console.log('result.rows', result.rows)
+    res.json(result.rows);
+  } catch (err) {
+    console.log('errCitas', err)
     res.status(500).json({ error: err.message });
   }
 };
@@ -71,6 +160,7 @@ exports.createCita = async (req, res) => {
     
     // Responder con la nueva cita creada
     res.json(result.rows[0]);
+    console.log('result.rows[0]',result.rows[0])
   } catch (err) {
     // Manejo de errores
     console.log('error al crear cita');
@@ -78,19 +168,24 @@ exports.createCita = async (req, res) => {
   }
 };
 
-
 // Actualizar una cita
-exports.updateCita = async (req, res) => {
-  const { id } = req.params;
-  const { paciente_id, doctor_id, especialidad_id, fecha, duracion, descripcion } = req.body;
+exports.updateCitaEstado = async (req, res) => {
+  const { id } = req.params; // ID de la cita
+  const { estado } = req.body; // Nuevo estado de la cita
+
   try {
     const result = await pool.query(
-      'UPDATE citas SET paciente_id = $1, doctor_id = $2, especialidad_id = $3, fecha = $4, duracion = $5, descripcion = $6 WHERE id = $7 RETURNING *',
-      [paciente_id, doctor_id, especialidad_id, fecha, duracion, descripcion, id]
+      'UPDATE citas SET estado = $1 WHERE id = $2 RETURNING *', // Consulta para actualizar solo el estado
+      [estado, id] // Parámetros de la consulta
     );
-    res.json(result.rows[0]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Cita no encontrada' }); // Manejo de error si la cita no existe
+    }
+
+    res.json(result.rows[0]); // Respuesta con los datos actualizados de la cita
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message }); // Manejo de errores
   }
 };
 

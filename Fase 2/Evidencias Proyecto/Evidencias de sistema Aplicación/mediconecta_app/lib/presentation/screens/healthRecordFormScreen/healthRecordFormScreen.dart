@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:mediconecta_app/api/apiService.dart';
+import 'package:mediconecta_app/provider/user_auth_provider.dart';
 import 'package:mediconecta_app/theme/theme.dart';
+import 'package:provider/provider.dart';
 
 class HealthRecordFormScreen extends StatefulWidget {
   const HealthRecordFormScreen({super.key});
@@ -15,27 +18,96 @@ class _HealthRecordFormScreenState extends State<HealthRecordFormScreen> {
   final _bloodPressureController = TextEditingController();
   final _heartRateController = TextEditingController();
 
-  String error = '';
+  final ApiService apiService = ApiService();
 
-  void _submitForm() {
+  String error = '';
+  bool _isLoading = false; // Estado para el spinner
+
+  // Función para mostrar el diálogo de éxito o error
+  void _showDialog(String title, String message, {bool isSuccess = true}) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            title,
+            style: TextStyle(color: isSuccess ? Colors.green : Colors.red),
+          ),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Cerrar el diálogo
+                if (isSuccess) {
+                  Navigator.of(context).pop(); // Cerrar el formulario si es exitoso
+                }
+              },
+              child: const Text("OK"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _submitForm() async {
+    // Reiniciar el estado de error
+    setState(() {
+      error = '';
+      _isLoading = true; // Comenzar el proceso de carga
+    });
+
+    // Verificar que al menos un campo esté completo
+    if (_glucoseController.text.isEmpty && 
+        _bloodPressureController.text.isEmpty && 
+        _heartRateController.text.isEmpty) {
+      _showDialog('Error', 'Debes ingresar como mínimo un registro de salud', isSuccess: false);
       setState(() {
-        error = '';
+        _isLoading = false; // Detener el proceso de carga
       });
-    if(_glucoseController.text.isEmpty && _bloodPressureController.text.isEmpty && _heartRateController.text.isEmpty){
-      setState(() {
-        error = 'Debes ingresar como mínimo un registro de salud';
-      });
+      return;
     }
-    // if (_formKey.currentState!.validate()) {
-    //   final record = HealthRecord(
-    //     date: DateTime.now(),
-    //     glucoseLevel: double.parse(_glucoseController.text),
-    //     bloodPressure: double.parse(_bloodPressureController.text),
-    //     heartRate: double.parse(_heartRateController.text),
-    //   );
-    //   widget.onSave(record);
-    //   Navigator.pop(context); // Cierra el formulario
-    // }
+
+    try {
+      final userAuthProvider = Provider.of<UserAuthProvider>(context, listen: false);
+      final patientId = userAuthProvider.patientId;
+
+      print('patientIdRegistroSalud$patientId');
+
+      // Obtener valores de los controladores, o dejar en null si están vacíos
+      final int? nivelGlucosa = _glucoseController.text.isNotEmpty 
+          ? int.tryParse(_glucoseController.text) 
+          : null;
+      final int? presionArterial = _bloodPressureController.text.isNotEmpty 
+          ? int.tryParse(_bloodPressureController.text) 
+          : null;
+      final int? frecuenciaCardiaca = _heartRateController.text.isNotEmpty 
+          ? int.tryParse(_heartRateController.text) 
+          : null;
+
+      // Llamar a la función de creación del registro de salud
+      final response = await apiService.createRegistroSalud(
+        pacienteId: patientId!, // Asegúrate de que pacienteId esté definido
+        nivelGlucosa: nivelGlucosa,
+        presionArterial: presionArterial,
+        frecuenciaCardiaca: frecuenciaCardiaca,
+      );
+
+      setState(() {
+        _isLoading = false; // Detener el proceso de carga
+      });
+
+      if (response != null) {
+        _showDialog('Éxito', 'Registro de salud creado exitosamente', isSuccess: true);
+      } else {
+        _showDialog('Error', 'Error al crear el registro de salud. Inténtalo de nuevo.', isSuccess: false);
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false; // Detener el proceso de carga
+      });
+      _showDialog('Error', 'Ocurrió un error: $e', isSuccess: false);
+    }
   }
 
   @override
@@ -55,7 +127,6 @@ class _HealthRecordFormScreenState extends State<HealthRecordFormScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-      
                   Column(
                     children: [
                       Column(
@@ -90,9 +161,7 @@ class _HealthRecordFormScreenState extends State<HealthRecordFormScreen> {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 20,),
-                            
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -125,9 +194,7 @@ class _HealthRecordFormScreenState extends State<HealthRecordFormScreen> {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 20,),
-                            
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -163,18 +230,6 @@ class _HealthRecordFormScreenState extends State<HealthRecordFormScreen> {
                       ),
                     ],
                   ),
-                  
-                  // const SizedBox(height: 20),
-      
-                  if(error.isNotEmpty)
-                    Text(
-                      error,
-                      style: const TextStyle(
-                        color: Colors.red
-                      ),
-                    ),
-                  // const SizedBox(height: 20),
-            
                   GestureDetector(
                     onTap: _submitForm,
                     child: Container(
@@ -182,22 +237,27 @@ class _HealthRecordFormScreenState extends State<HealthRecordFormScreen> {
                       width: size.width,
                       decoration: const BoxDecoration(
                         color: AppColors.secondaryColor,
-                          borderRadius: BorderRadius.all(
-                            Radius.circular(10),
-                          ),
-                      ),
-                      child: const Text(
-                        'Registrar',
-                        style: TextStyle(
-                          color: AppColors.textColorPrimary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20
+                        borderRadius: BorderRadius.all(
+                          Radius.circular(10),
                         ),
-                        textAlign: TextAlign.center,
+                      ),
+                      child: Center(
+                        child: _isLoading // Mostrar spinner si está cargando
+                          ? CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.textColorPrimary),
+                            )
+                          : const Text(
+                              'Registrar',
+                              style: TextStyle(
+                                color: AppColors.textColorPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
                       ),
                     ),
-                  )
-                  
+                  ),
                 ],
               ),
             ),
